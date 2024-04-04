@@ -1,0 +1,24 @@
+[Unit]
+Description=%i service with docker compose
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+WorkingDirectory=/data/compose/
+
+# Remove old containers, images and volumes
+ExecStartPre=-/usr/bin/docker compose -f global.yml -f %i.yml down -v
+ExecStartPre=-/usr/bin/docker compose -f global.yml -f %i.yml rm -fv
+
+# Compose up
+ExecStart=-/usr/bin/docker compose -f global.yml -f %i.yml pull
+ExecStart=/usr/bin/docker compose -f global.yml -f %i.yml up -d
+
+# Compose down, remove containers and volumes
+ExecStop=/usr/bin/docker compose -f %i.yml down -v
+
+[Install]
+WantedBy=multi-user.target
