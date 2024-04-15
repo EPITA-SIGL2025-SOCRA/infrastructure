@@ -22,5 +22,5 @@ variable "ssh_authorized_keys_flo" {
 }
 
 locals {
-  students = csvdecode(file("${path.module}/students.csv"))
+  groups = csvdecode(file("${path.module}/groups.csv"))
 }

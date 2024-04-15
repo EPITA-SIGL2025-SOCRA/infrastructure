@@ -21,21 +21,21 @@ resource "scaleway_instance_security_group" "web" {
   }
 }
 
-resource "scaleway_instance_ip" "student_instance_ip" {
-  for_each   = { for student in local.students : student.username => student }
+resource "scaleway_instance_ip" "group_instance_ip" {
+  for_each   = { for group in local.groups : group.name => group }
   project_id = var.project_id
   zone       = var.instance_zone
 }
 
-resource "scaleway_instance_server" "student" {
+resource "scaleway_instance_server" "group" {
   project_id        = var.project_id
   zone              = var.instance_zone
-  for_each          = { for student in local.students : student.username => student }
+  for_each          = { for group in local.groups : group.name => group }
   name              = each.key
   image             = "ubuntu-jammy"
   type              = "DEV1-S"
   tags              = ["web", "socra", "epita"]
-  ip_id             = scaleway_instance_ip.student_instance_ip[each.key].id
+  ip_id             = scaleway_instance_ip.group_instance_ip[each.key].id
   security_group_id = scaleway_instance_security_group.web.id
   cloud_init        = <<EOT
 #cloud-config
@@ -145,30 +145,30 @@ EOT
 
 output "instances_names" {
   value = {
-    for k, r in ovh_domain_zone_record.student : k => "${r.subdomain}.${r.zone}"
+    for k, r in ovh_domain_zone_record.group : k => "${r.subdomain}.${r.zone}"
   }
 }
 
 output "instances_ips" {
   value = {
-    for k, i in scaleway_instance_server.student : k => i.public_ip
+    for k, i in scaleway_instance_server.group : k => i.public_ip
   }
 }
 
-resource "ovh_domain_zone_record" "student" {
-  for_each  = { for student in local.students : student.username => student }
+resource "ovh_domain_zone_record" "group" {
+  for_each  = { for group in local.groups : group.name => group }
   zone      = var.instance_domain
   subdomain = each.key
-  target    = scaleway_instance_ip.student_instance_ip[each.key].address
+  target    = scaleway_instance_ip.group_instance_ip[each.key].address
   fieldtype = "A"
   ttl       = 3600
 }
 
-resource "ovh_domain_zone_record" "student_api" {
-  for_each  = { for student in local.students : student.username => student }
+resource "ovh_domain_zone_record" "group_wildcard_subdomains" {
+  for_each  = { for group in local.groups : group.name => group }
   zone      = var.instance_domain
   subdomain = "*.${each.key}"
-  target    = scaleway_instance_ip.student_instance_ip[each.key].address
+  target    = scaleway_instance_ip.group_instance_ip[each.key].address
   fieldtype = "A"
   ttl       = 3600
 }
